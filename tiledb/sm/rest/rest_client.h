@@ -255,6 +255,15 @@ class RestClient {
       const std::vector<std::string>& enumeration_names);
 
   /**
+   * Get the requested query plan from the REST server via POST request.
+   *
+   * @param uri Array URI.
+   * @param query Query to fetch query plan for.
+   * @return The requested query plan
+   */
+  std::string post_query_plan_from_rest(const URI& uri, Query& query);
+
+  /**
    * Post a data query to rest server
    *
    * @param uri of array being queried

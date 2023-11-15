@@ -775,6 +775,8 @@ class Query {
     return default_channel_aggregates_.empty();
   }
 
+  RestClient* rest_client() const;
+
  private:
   /* ********************************* */
   /*         PRIVATE ATTRIBUTES        */

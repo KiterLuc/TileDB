@@ -43,6 +43,7 @@
 #include "tiledb/sm/serialization/fragments.h"
 #include "tiledb/sm/serialization/group.h"
 #include "tiledb/sm/serialization/query.h"
+#include "tiledb/sm/serialization/query_plan.h"
 #include "tiledb/sm/serialization/tiledb-rest.capnp.h"
 #include "tiledb/sm/serialization/vacuum.h"
 #include "tiledb/sm/rest/curl.h" // must be included last to avoid Windows.h
@@ -58,6 +59,7 @@
 
 #include "tiledb/common/logger.h"
 #include "tiledb/sm/array/array.h"
+#include "tiledb/sm/enums/query_status.h"
 #include "tiledb/sm/enums/query_type.h"
 #include "tiledb/sm/group/group.h"
 #include "tiledb/sm/misc/constants.h"
@@ -687,6 +689,49 @@ RestClient::post_enumerations_from_rest(
   // Ensure data has a null delimiter for cap'n proto if using JSON
   throw_if_not_ok(ensure_json_null_delimited_string(&returned_data));
   return serialization::deserialize_load_enumerations_response(
+      serialization_type_, returned_data);
+}
+
+std::string RestClient::post_query_plan_from_rest(
+    const URI& uri, Query& query) {
+  Buffer buff;
+  serialization::serialize_query_plan_request(
+      query.config(), query, serialization_type_, buff);
+
+  // Wrap in a list
+  BufferList serialized;
+  throw_if_not_ok(serialized.add_buffer(std::move(buff)));
+
+  // Init curl and form the URL
+  Curl curlc(logger_);
+  std::string array_ns, array_uri;
+  throw_if_not_ok(uri.get_rest_components(&array_ns, &array_uri));
+  const std::string cache_key = array_ns + ":" + array_uri;
+  throw_if_not_ok(
+      curlc.init(config_, extra_headers_, &redirect_meta_, &redirect_mtx_));
+  std::string url = redirect_uri(cache_key) + "/v2/arrays/" + array_ns + "/" +
+                    curlc.url_escape(array_uri) + "/query/query_plan";
+
+  // Get the data
+  Buffer returned_data;
+  throw_if_not_ok(curlc.post_data(
+      stats_,
+      url,
+      serialization_type_,
+      &serialized,
+      &returned_data,
+      cache_key));
+  if (returned_data.data() == nullptr || returned_data.size() == 0) {
+    throw Status_RestError(
+        "Error getting enumerations from REST; server returned no data.");
+  }
+
+  // Ensure data has a null delimiter for cap'n proto if using JSON
+  throw_if_not_ok(ensure_json_null_delimited_string(&returned_data));
+  // We need to transition the query status to INITIALIZED to mimic the behavior
+  // of getting a query plan locally
+  query.set_status(QueryStatus::INITIALIZED);
+  return serialization::deserialize_query_plan_response(
       serialization_type_, returned_data);
 }
 
