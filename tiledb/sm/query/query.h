@@ -775,6 +775,10 @@ class Query {
     return default_channel_aggregates_.empty();
   }
 
+  /**
+   * Returns the REST client configured in the storage manager associated to
+   * this query
+   */
   RestClient* rest_client() const;
 
  private:

@@ -43,6 +43,8 @@ namespace tiledb {
 namespace sm {
 
 class Query;
+class WhiteboxInterval;
+
 enum class Layout : uint8_t;
 enum class ArrayType : uint8_t;
 
@@ -50,6 +52,11 @@ enum class ArrayType : uint8_t;
  * Query plan information
  */
 class QueryPlan {
+  /**
+   * Friends with its whitebox testing class.
+   */
+  friend class WhiteboxQueryPlan;
+
  public:
   /* ****************************** */
   /*   CONSTRUCTORS & DESTRUCTORS   */
@@ -81,10 +88,10 @@ class QueryPlan {
    */
   std::string dump_json(uint32_t indent = 4);
 
- private:
-  /* ****************************** */
-  /*       PRIVATE ATTRIBUTES       */
-  /* ****************************** */
+ protected:
+  /* ******************************** */
+  /*       PROTECTED ATTRIBUTES       */
+  /* ******************************** */
 
   /** The uri of the queried array */
   std::string array_uri_;

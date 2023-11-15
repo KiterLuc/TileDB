@@ -147,3 +147,63 @@ TEST_CASE_METHOD(QueryPlanFx, "Query plan dump_json", "[query_plan][dump]") {
 
   destroy_array(array_shared);
 }
+
+/**
+ * Whitebox testing version of QueryPlan
+ */
+class WhiteboxQueryPlan : public tiledb::sm::QueryPlan {
+ public:
+  WhiteboxQueryPlan(Query& query)
+      : QueryPlan(query){};
+
+  using tiledb::sm::QueryPlan::from_json;
+
+  void reset() {
+    array_uri_ = constants::empty_str;
+    vfs_backend_ = constants::empty_str;
+    strategy_name_ = constants::empty_str;
+    dimensions_.clear();
+    attributes_.clear();
+  }
+};
+
+TEST_CASE_METHOD(
+    QueryPlanFx, "Query plan from_json", "[query_plan][from_json]") {
+  const URI uri = URI("query_plan_array");
+
+  auto array = create_array(uri);
+
+  auto st =
+      array->open(QueryType::READ, EncryptionType::NO_ENCRYPTION, nullptr, 0);
+  REQUIRE(st.ok());
+
+  shared_ptr<Array> array_shared = std::move(array);
+  Query query(sm_.get(), array_shared);
+  REQUIRE(query.set_layout(Layout::ROW_MAJOR).ok());
+
+  stats::Stats stats("foo");
+  Subarray subarray(array_shared.get(), &stats, logger_);
+  uint64_t r[2]{0, 1};
+  REQUIRE(subarray.add_range(0, r, r + 1, nullptr).ok());
+  query.set_subarray(subarray);
+
+  std::vector<uint64_t> data(2);
+  uint64_t size = 2;
+  REQUIRE(query.set_data_buffer("attr", data.data(), &size).ok());
+
+  // Create a plan from query and dump to json string
+  QueryPlan plan(query);
+  auto plan_json = plan.dump_json();
+
+  // Create another plan and reset it
+  WhiteboxQueryPlan plan2(query);
+  plan2.reset();
+  REQUIRE(plan_json != plan2.dump_json());
+
+  // Repopulate it from the previously dumped json
+  plan2.from_json(plan_json);
+  // Check that both query plans are the same
+  REQUIRE(plan_json == plan2.dump_json());
+
+  destroy_array(array_shared);
+}
