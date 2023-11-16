@@ -37,14 +37,14 @@
 #include <vector>
 #include "tiledb/common/common.h"
 
+#include "external/include/nlohmann/json.hpp"
+
 using namespace tiledb::common;
 
 namespace tiledb {
 namespace sm {
 
 class Query;
-class WhiteboxInterval;
-
 enum class Layout : uint8_t;
 enum class ArrayType : uint8_t;
 
@@ -52,11 +52,6 @@ enum class ArrayType : uint8_t;
  * Query plan information
  */
 class QueryPlan {
-  /**
-   * Friends with its whitebox testing class.
-   */
-  friend class WhiteboxQueryPlan;
-
  public:
   /* ****************************** */
   /*   CONSTRUCTORS & DESTRUCTORS   */
@@ -86,42 +81,17 @@ class QueryPlan {
    *
    * @return a json representation of the query plan
    */
-  std::string dump_json(uint32_t indent = 4);
+  inline std::string dump_json(uint32_t indent = 4) {
+    return query_plan_.dump(indent);
+  }
 
- protected:
-  /* ******************************** */
-  /*       PROTECTED ATTRIBUTES       */
-  /* ******************************** */
+ private:
+  /* ****************************** */
+  /*       PRIVATE ATTRIBUTES       */
+  /* ****************************** */
 
-  /** The uri of the queried array */
-  std::string array_uri_;
-
-  /** The storage backend as seen by VFS */
-  std::string vfs_backend_;
-
-  /** Query layout */
-  Layout query_layout_;
-
-  /** The strategy name used by the query */
-  std::string strategy_name_;
-
-  /** The dense/sparse array type */
-  ArrayType array_type_;
-
-  /** A list of queried attributes */
-  std::vector<std::string> attributes_;
-
-  /** A list of queried dimensions */
-  std::vector<std::string> dimensions_;
-
-  /**
-   * Populate query plan from a valid json representation.
-   * Only meant to be used during construction when a remote query
-   * plan comes as a json string from rest serialization.
-   *
-   * @param json a json representation of the query plan
-   */
-  void from_json(const std::string& json);
+  /** The query plan in json */
+  nlohmann::json query_plan_;
 };
 
 }  // namespace sm

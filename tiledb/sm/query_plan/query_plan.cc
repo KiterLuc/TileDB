@@ -39,8 +39,6 @@
 #include "tiledb/sm/query/query.h"
 #include "tiledb/sm/rest/rest_client.h"
 
-#include "external/include/nlohmann/json.hpp"
-
 using namespace tiledb::common;
 
 namespace tiledb {
@@ -58,69 +56,40 @@ QueryPlan::QueryPlan(Query& query) {
           "with no REST client.");
     }
 
-    auto query_plan = rest_client->post_query_plan_from_rest(
+    query_plan_ = rest_client->post_query_plan_from_rest(
         query.array()->array_uri(), query);
-    from_json(query_plan);
     return;
   }
 
-  array_uri_ = query.array()->array_uri().to_string();
-  vfs_backend_ = URI(array_uri_).backend_name();
-  query_layout_ = query.layout();
-
+  auto array_uri = query.array()->array_uri().to_string();
   // This most probably ends up creating the strategy on the query
   auto strategy_ptr = query.strategy();
-  strategy_name_ = strategy_ptr->name();
 
-  array_type_ = query.array()->array_schema_latest().array_type();
-
+  std::vector<std::string> attributes;
+  std::vector<std::string> dimensions;
   for (auto& buf : query.buffer_names()) {
     if (query.array()->array_schema_latest().is_dim(buf)) {
-      dimensions_.push_back(buf);
+      dimensions.push_back(buf);
     } else {
-      attributes_.push_back(buf);
+      attributes.push_back(buf);
     }
   }
   if (query.is_dense()) {
-    dimensions_ = query.array()->array_schema_latest().dim_names();
+    dimensions = query.array()->array_schema_latest().dim_names();
   }
+  std::sort(attributes.begin(), attributes.end());
+  std::sort(dimensions.begin(), dimensions.end());
 
-  std::sort(attributes_.begin(), attributes_.end());
-  std::sort(dimensions_.begin(), dimensions_.end());
-}
-
-/* ********************************* */
-/*                API                */
-/* ********************************* */
-std::string QueryPlan::dump_json(uint32_t indent) {
-  nlohmann::json rv = {
+  query_plan_ = {
       {"TileDB Query Plan",
-       {{"Array.URI", array_uri_},
-        {"Array.Type", array_type_str(array_type_)},
-        {"VFS.Backend", vfs_backend_},
-        {"Query.Layout", layout_str(query_layout_)},
-        {"Query.Strategy.Name", strategy_name_},
-        {"Query.Attributes", attributes_},
-        {"Query.Dimensions", dimensions_}}}};
-
-  return rv.dump(indent);
-}
-
-void QueryPlan::from_json(const std::string& json) {
-  auto j = nlohmann::json::parse(json);
-
-  j = j["TileDB Query Plan"];
-  array_uri_ = j["Array.URI"];
-  throw_if_not_ok(array_type_enum(j["Array.Type"], &array_type_));
-  vfs_backend_ = j["VFS.Backend"];
-  throw_if_not_ok(layout_enum(j["Query.Layout"], &query_layout_));
-  strategy_name_ = j["Query.Strategy.Name"];
-  for (auto& a : j["Query.Attributes"]) {
-    attributes_.push_back(a);
-  }
-  for (auto& d : j["Query.Dimensions"]) {
-    dimensions_.push_back(d);
-  }
+       {{"Array.URI", array_uri},
+        {"Array.Type",
+         array_type_str(query.array()->array_schema_latest().array_type())},
+        {"VFS.Backend", URI(array_uri).backend_name()},
+        {"Query.Layout", layout_str(query.layout())},
+        {"Query.Strategy.Name", strategy_ptr->name()},
+        {"Query.Attributes", attributes},
+        {"Query.Dimensions", dimensions}}}};
 }
 
 }  // namespace sm
