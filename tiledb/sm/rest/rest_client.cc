@@ -59,7 +59,6 @@
 
 #include "tiledb/common/logger.h"
 #include "tiledb/sm/array/array.h"
-#include "tiledb/sm/enums/query_status.h"
 #include "tiledb/sm/enums/query_type.h"
 #include "tiledb/sm/group/group.h"
 #include "tiledb/sm/misc/constants.h"
@@ -723,14 +722,11 @@ std::string RestClient::post_query_plan_from_rest(
       cache_key));
   if (returned_data.data() == nullptr || returned_data.size() == 0) {
     throw Status_RestError(
-        "Error getting enumerations from REST; server returned no data.");
+        "Error getting query plan from REST; server returned no data.");
   }
 
   // Ensure data has a null delimiter for cap'n proto if using JSON
   throw_if_not_ok(ensure_json_null_delimited_string(&returned_data));
-  // We need to transition the query status to INITIALIZED to mimic the behavior
-  // of getting a query plan locally
-  query.set_status(QueryStatus::INITIALIZED);
   return serialization::deserialize_query_plan_response(
       serialization_type_, returned_data);
 }

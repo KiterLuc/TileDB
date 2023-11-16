@@ -35,6 +35,7 @@
 #include "tiledb/sm/array/array.h"
 #include "tiledb/sm/enums/array_type.h"
 #include "tiledb/sm/enums/layout.h"
+#include "tiledb/sm/enums/query_status.h"
 #include "tiledb/sm/filesystem/uri.h"
 #include "tiledb/sm/query/query.h"
 #include "tiledb/sm/rest/rest_client.h"
@@ -58,6 +59,9 @@ QueryPlan::QueryPlan(Query& query) {
 
     query_plan_ = rest_client->post_query_plan_from_rest(
         query.array()->array_uri(), query);
+    // We need to transition the query status to INITIALIZED to mimic the
+    // behavior of getting a query plan locally
+    query.set_status(QueryStatus::INITIALIZED);
     return;
   }
 
