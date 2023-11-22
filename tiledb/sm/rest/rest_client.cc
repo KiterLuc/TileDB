@@ -1648,6 +1648,10 @@ RestClient::post_enumerations_from_rest(
   throw Status_RestError("Cannot use rest client; serialization not enabled.");
 }
 
+std::string RestClient::post_query_plan_from_rest(const URI&, Query&) {
+  throw Status_RestError("Cannot use rest client; serialization not enabled.");
+}
+
 Status RestClient::submit_query_to_rest(const URI&, Query*) {
   return LOG_STATUS(
       Status_RestError("Cannot use rest client; serialization not enabled."));
