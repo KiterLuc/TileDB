@@ -709,7 +709,7 @@ std::string RestClient::post_query_plan_from_rest(
   throw_if_not_ok(
       curlc.init(config_, extra_headers_, &redirect_meta_, &redirect_mtx_));
   std::string url = redirect_uri(cache_key) + "/v2/arrays/" + array_ns + "/" +
-                    curlc.url_escape(array_uri) + "/query/query_plan";
+                    curlc.url_escape(array_uri) + "/query/plan";
 
   // Get the data
   Buffer returned_data;
