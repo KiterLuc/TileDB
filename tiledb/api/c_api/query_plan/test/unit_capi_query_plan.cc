@@ -37,12 +37,32 @@
 
 using namespace tiledb::test;
 
-struct QueryPlanFx : TemporaryDirectoryFixture {
-  void create_dense_array(const std::string& path);
-  void create_sparse_array(const std::string& path);
+#ifndef TILEDB_TESTS_ENABLE_REST
+constexpr bool rest_tests = false;
+#else
+constexpr bool rest_tests = true;
+#endif
+
+class QueryPlanFx : TemporaryDirectoryFixture {
+ public:
+  QueryPlanFx() {
+    if constexpr (rest_tests) {
+      array_name_ += "tiledb://unit/";
+    }
+    array_name_ += temp_dir_ + "queryplan_array";
+  }
+
+  void create_dense_array();
+  void create_sparse_array();
+  void remove_array() {
+    tiledb_array_delete(ctx, array_name_.c_str());
+  }
+
+ private:
+  std::string array_name_;
 };
 
-void QueryPlanFx::create_dense_array(const std::string& path) {
+void QueryPlanFx::create_dense_array() {
   // Create array schema
   tiledb_array_schema_t* array_schema;
   int rc = tiledb_array_schema_alloc(ctx, TILEDB_DENSE, &array_schema);
@@ -96,7 +116,7 @@ void QueryPlanFx::create_dense_array(const std::string& path) {
   REQUIRE(rc == TILEDB_OK);
 
   // Create array
-  rc = tiledb_array_create(ctx, path.c_str(), array_schema);
+  rc = tiledb_array_create(ctx, array_name_.c_str(), array_schema);
   REQUIRE(rc == TILEDB_OK);
 
   // Clean up
@@ -108,7 +128,7 @@ void QueryPlanFx::create_dense_array(const std::string& path) {
   tiledb_domain_free(&domain);
 }
 
-void QueryPlanFx::create_sparse_array(const std::string& array_name) {
+void QueryPlanFx::create_sparse_array() {
   // Create dimensions
   uint64_t tile_extents[] = {2, 2};
   uint64_t dim_domain[] = {1, 10, 1, 10};
@@ -161,7 +181,7 @@ void QueryPlanFx::create_sparse_array(const std::string& array_name) {
   CHECK(rc == TILEDB_OK);
 
   // Create array
-  rc = tiledb_array_create(ctx, array_name.c_str(), array_schema);
+  rc = tiledb_array_create(ctx, array_name_.c_str(), array_schema);
   CHECK(rc == TILEDB_OK);
 
   // Clean up
@@ -177,11 +197,10 @@ TEST_CASE_METHOD(
     QueryPlanFx,
     "C API: tiledb_query_get_plan argument validation",
     "[capi][query_plan]") {
-  std::string array_name = temp_dir_ + "queryplan_array";
-  create_dense_array(array_name);
+  create_dense_array();
 
   tiledb_array_t* array;
-  REQUIRE(tiledb_array_alloc(ctx, array_name.c_str(), &array) == TILEDB_OK);
+  REQUIRE(tiledb_array_alloc(ctx, array_name_.c_str(), &array) == TILEDB_OK);
   REQUIRE(tiledb_array_open(ctx, array, TILEDB_READ) == TILEDB_OK);
 
   tiledb_query_t* query;
@@ -199,17 +218,17 @@ TEST_CASE_METHOD(
   REQUIRE(tiledb_array_close(ctx, array) == TILEDB_OK);
   tiledb_query_free(&query);
   tiledb_array_free(&array);
+  remove_array();
 }
 
 TEST_CASE_METHOD(
     QueryPlanFx,
     "C API: tiledb_query_get_plan API lifecycle checks",
     "[capi][query_plan]") {
-  std::string array_name = temp_dir_ + "queryplan_array";
-  create_dense_array(array_name);
+  create_dense_array();
 
   tiledb_array_t* array;
-  REQUIRE(tiledb_array_alloc(ctx, array_name.c_str(), &array) == TILEDB_OK);
+  REQUIRE(tiledb_array_alloc(ctx, array_name_.c_str(), &array) == TILEDB_OK);
   REQUIRE(tiledb_array_open(ctx, array, TILEDB_READ) == TILEDB_OK);
 
   tiledb_query_t* query;
@@ -255,17 +274,17 @@ TEST_CASE_METHOD(
   REQUIRE(tiledb_array_close(ctx, array) == TILEDB_OK);
   tiledb_query_free(&query);
   tiledb_array_free(&array);
+  remove_array();
 }
 
 TEST_CASE_METHOD(
     QueryPlanFx,
     "C API: Query plan basic bahaviour",
     "[capi][query_plan][basic1]") {
-  std::string array_name = temp_dir_ + "queryplan_array";
-  create_dense_array(array_name);
+  create_dense_array();
 
   tiledb_array_t* array;
-  REQUIRE(tiledb_array_alloc(ctx, array_name.c_str(), &array) == TILEDB_OK);
+  REQUIRE(tiledb_array_alloc(ctx, array_name_.c_str(), &array) == TILEDB_OK);
   REQUIRE(tiledb_array_open(ctx, array, TILEDB_READ) == TILEDB_OK);
 
   tiledb_query_t* query;
@@ -295,11 +314,11 @@ TEST_CASE_METHOD(
   std::string str_plan(data, len);
   nlohmann::json json_plan = nlohmann::json::parse(str_plan);
 
-  CHECK(json_plan["TileDB Query Plan"]["Array.URI"] == array_name);
+  CHECK(json_plan["TileDB Query Plan"]["Array.URI"] == array_name_);
   CHECK(json_plan["TileDB Query Plan"]["Array.Type"] == "dense");
   CHECK(
       json_plan["TileDB Query Plan"]["VFS.Backend"] ==
-      tiledb::sm::URI(array_name).backend_name());
+      tiledb::sm::URI(array_name_).backend_name());
   CHECK(json_plan["TileDB Query Plan"]["Query.Layout"] == "row-major");
   CHECK(json_plan["TileDB Query Plan"]["Query.Strategy.Name"] == "DenseReader");
   CHECK(
@@ -313,17 +332,17 @@ TEST_CASE_METHOD(
   REQUIRE(tiledb_array_close(ctx, array) == TILEDB_OK);
   tiledb_query_free(&query);
   tiledb_array_free(&array);
+  remove_array();
 }
 
 TEST_CASE_METHOD(
     QueryPlanFx,
     "C API: Query plan basic bahaviour 2",
     "[capi][query_plan][basic2]") {
-  std::string array_name = temp_dir_ + "queryplan_array";
-  create_sparse_array(array_name);
+  create_sparse_array();
 
   tiledb_array_t* array;
-  REQUIRE(tiledb_array_alloc(ctx, array_name.c_str(), &array) == TILEDB_OK);
+  REQUIRE(tiledb_array_alloc(ctx, array_name_.c_str(), &array) == TILEDB_OK);
   REQUIRE(tiledb_array_open(ctx, array, TILEDB_WRITE) == TILEDB_OK);
 
   tiledb_query_t* query;
@@ -359,11 +378,11 @@ TEST_CASE_METHOD(
   std::string str_plan(data, len);
   nlohmann::json json_plan = nlohmann::json::parse(str_plan);
 
-  CHECK(json_plan["TileDB Query Plan"]["Array.URI"] == array_name);
+  CHECK(json_plan["TileDB Query Plan"]["Array.URI"] == array_name_);
   CHECK(json_plan["TileDB Query Plan"]["Array.Type"] == "sparse");
   CHECK(
       json_plan["TileDB Query Plan"]["VFS.Backend"] ==
-      tiledb::sm::URI(array_name).backend_name());
+      tiledb::sm::URI(array_name_).backend_name());
   CHECK(json_plan["TileDB Query Plan"]["Query.Layout"] == "global-order");
   CHECK(
       json_plan["TileDB Query Plan"]["Query.Strategy.Name"] ==
@@ -379,4 +398,5 @@ TEST_CASE_METHOD(
   REQUIRE(tiledb_array_close(ctx, array) == TILEDB_OK);
   tiledb_query_free(&query);
   tiledb_array_free(&array);
+  remove_array();
 }
