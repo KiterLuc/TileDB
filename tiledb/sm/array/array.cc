@@ -457,6 +457,11 @@ Status Array::open(
   }
 
   is_opening_or_closing_ = false;
+
+  if (array_schema_latest_ == nullptr) {
+    throw ArrayException("Array schema is null.");
+  }
+
   return Status::Ok();
 }
 

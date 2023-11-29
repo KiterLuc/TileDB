@@ -1552,6 +1552,9 @@ void Query::set_subarray_unsafe(const void* subarray) {
 }
 
 Status Query::submit() {
+  if (array_->array_schema_latest_ptr() == nullptr) {
+    throw QueryStatusException("Array schema is null.");
+  }
   // Do not resubmit completed reads.
   if (type_ == QueryType::READ && status_ == QueryStatus::COMPLETED) {
     return Status::Ok();
