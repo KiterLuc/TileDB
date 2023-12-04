@@ -103,6 +103,16 @@ class Array {
   /*                API                */
   /* ********************************* */
 
+  /** Increments queries in progress for this array. */
+  void increment_queries_in_progress() {
+    queries_in_progress_++;
+  }
+
+  /** Decrement queries in progress for this array. */
+  void decrement_queries_in_progress() {
+    queries_in_progress_++;
+  }
+
   /** Returns the array directory object. */
   const ArrayDirectory& array_directory() const;
 
@@ -625,6 +635,9 @@ class Array {
   /* ********************************* */
   /*         PRIVATE ATTRIBUTES        */
   /* ********************************* */
+
+  /** Number of queries in progress for the array. */
+  std::atomic<uint64_t> queries_in_progress_;
 
   /** The latest array schema. */
   shared_ptr<ArraySchema> array_schema_latest_;

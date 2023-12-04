@@ -93,8 +93,7 @@ StorageManagerCanonical::StorageManagerCanonical(
     : resources_(resources)
     , logger_(logger)
     , cancellation_in_progress_(false)
-    , config_(config)
-    , queries_in_progress_(0) {
+    , config_(config) {
   /*
    * This is a transitional version the implementation of this constructor. To
    * complete the transition, the `init` member function must disappear.
@@ -1111,9 +1110,10 @@ const Config& StorageManagerCanonical::config() const {
   return config_;
 }
 
-void StorageManagerCanonical::decrement_in_progress() {
+void StorageManagerCanonical::decrement_in_progress(Array* array) {
   std::unique_lock<std::mutex> lck(queries_in_progress_mtx_);
   queries_in_progress_--;
+  array->decrement_queries_in_progress();
   queries_in_progress_cv_.notify_all();
 }
 
@@ -1200,9 +1200,10 @@ Status StorageManagerCanonical::group_create(const std::string& group_uri) {
   return Status::Ok();
 }
 
-void StorageManagerCanonical::increment_in_progress() {
+void StorageManagerCanonical::increment_in_progress(Array* array) {
   std::unique_lock<std::mutex> lck(queries_in_progress_mtx_);
   queries_in_progress_++;
+  array->increment_queries_in_progress();
   queries_in_progress_cv_.notify_all();
 }
 
@@ -1490,7 +1491,7 @@ Status StorageManagerCanonical::object_iter_next_preorder(
 
 Status StorageManagerCanonical::query_submit(Query* query) {
   // Process the query
-  QueryInProgress in_progress(this);
+  QueryInProgress in_progress(this, query->array());
   auto st = query->process();
 
   return st;

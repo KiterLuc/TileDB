@@ -84,7 +84,8 @@ Array::Array(
     const URI& array_uri,
     StorageManager* storage_manager,
     ConsistencyController& cc)
-    : array_schema_latest_(nullptr)
+    : queries_in_progress_(0)
+    , array_schema_latest_(nullptr)
     , array_uri_(array_uri)
     , array_dir_(storage_manager->resources(), array_uri)
     , array_uri_serialized_(array_uri)
@@ -453,6 +454,11 @@ Status Array::close() {
     // If array is not open treat this as a no-op
     // This keeps existing behavior from TileDB 2.6 and older
     return Status::Ok();
+  }
+
+  if (queries_in_progress_ > 0) {
+    throw Status_ArrayError(
+        "Error closing array; there are queries in progress.");
   }
 
   non_empty_domain_.clear();

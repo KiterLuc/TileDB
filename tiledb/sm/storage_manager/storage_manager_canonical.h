@@ -810,13 +810,17 @@ class StorageManagerCanonical {
     /** The StorageManagerCanonical instance. */
     StorageManagerCanonical* sm;
 
+    /** The Array instance. */
+    Array* array;
+
     /**
      * Constructor. Calls increment_in_progress() on given
      * StorageManagerCanonical.
      */
-    QueryInProgress(StorageManagerCanonical* sm)
-        : sm(sm) {
-      sm->increment_in_progress();
+    QueryInProgress(StorageManagerCanonical* sm, Array* array)
+        : sm(sm)
+        , array(array) {
+      sm->increment_in_progress(array);
     }
 
     /**
@@ -824,7 +828,7 @@ class StorageManagerCanonical {
      * StorageManagerCanonical.
      */
     ~QueryInProgress() {
-      sm->decrement_in_progress();
+      sm->decrement_in_progress(array);
     }
   };
 
@@ -883,11 +887,25 @@ class StorageManagerCanonical {
   /*         PRIVATE METHODS           */
   /* ********************************* */
 
-  /** Decrement the count of in-progress queries. */
-  void decrement_in_progress();
+  /**
+   * Decrement the count of in-progress queries.
+   *
+   * @param array The array the query is running on. This will decrease the
+   * number of running queries on the array, which is used to prevent closing
+   * the array when queries are running, which can lead to hard to debug
+   * segfaults.
+   */
+  void decrement_in_progress(Array* array);
 
-  /** Increment the count of in-progress queries. */
-  void increment_in_progress();
+  /**
+   * Increment the count of in-progress queries.
+   *
+   * @param array The array the query is running on. This will increase the
+   * number of running queries on the array, which is used to prevent closing
+   * the array when queries are running, which can lead to hard to debug
+   * segfaults.
+   */
+  void increment_in_progress(Array* array);
 
   /** Block until there are zero in-progress queries. */
   void wait_for_zero_in_progress();
