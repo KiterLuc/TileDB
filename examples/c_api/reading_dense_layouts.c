@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <tiledb/tiledb.h>
+#include <tiledb/tiledb_experimental.h>
 
 // Name of array.
 const char* array_name = "reading_dense_layouts_array";
@@ -161,6 +162,15 @@ void read_array(tiledb_layout_t layout) {
   tiledb_query_set_data_buffer(ctx, query, "a", data, &data_size);
   tiledb_query_set_data_buffer(ctx, query, "rows", coords_rows, &coords_size);
   tiledb_query_set_data_buffer(ctx, query, "cols", coords_cols, &coords_size);
+
+  // Get query plan
+  tiledb_string_t* s = NULL;
+  const char* data_out;
+  size_t length;
+  tiledb_query_get_plan(ctx, query, &s);
+  tiledb_string_view(s, &data_out, &length);
+  printf("\"%s\" has length %d\n", data_out, length);
+  tiledb_string_free(&s);  
 
   // Submit query
   tiledb_query_submit(ctx, query);
