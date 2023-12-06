@@ -4339,6 +4339,35 @@ capi_return_t tiledb_handle_load_enumerations_request(
   return TILEDB_OK;
 }
 
+int32_t tiledb_serialize_query_plan_request(
+    tiledb_ctx_t* ctx,
+    tiledb_query_t* query,
+    tiledb_serialization_type_t serialize_type,
+    tiledb_buffer_t** buffer) {
+  // Sanity check
+  if (sanity_check(ctx, query) == TILEDB_ERR)
+    return TILEDB_ERR;
+
+  auto buf = tiledb_buffer_handle_t::make_handle();
+
+  try {
+    tiledb::sm::serialization::serialize_query_plan_request(
+        ctx->resources().config(),
+        *query->query_,
+        (tiledb::sm::SerializationType)serialize_type,
+        buf->buffer());
+  } catch (StatusException& e) {
+    auto st = Status_Error(e.what());
+    LOG_STATUS_NO_RETURN_VALUE(st);
+    save_error(ctx, st);
+    tiledb_buffer_handle_t::break_handle(buf);
+    return TILEDB_ERR;
+  }
+
+  *buffer = buf;
+  return TILEDB_OK;
+}
+
 capi_return_t tiledb_handle_query_plan_request(
     tiledb_ctx_t* ctx,
     tiledb_array_t* array,
@@ -7274,6 +7303,16 @@ CAPI_INTERFACE(
     tiledb_buffer_t* response) {
   return api_entry<tiledb::api::tiledb_handle_query_plan_request>(
       ctx, array, serialization_type, request, response);
+}
+
+CAPI_INTERFACE(
+    serialize_query_plan_request,
+    tiledb_ctx_t* ctx,
+    tiledb_query_t* query,
+    tiledb_serialization_type_t serialization_type,
+    tiledb_buffer_t** buffer) {
+  return api_entry<tiledb::api::tiledb_serialize_query_plan_request>(
+      ctx, query, serialization_type, buffer);
 }
 
 CAPI_INTERFACE(

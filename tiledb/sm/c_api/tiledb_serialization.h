@@ -804,6 +804,13 @@ TILEDB_EXPORT capi_return_t tiledb_handle_query_plan_request(
     const tiledb_buffer_t* request,
     tiledb_buffer_t* response) TILEDB_NOEXCEPT;
 
+// TEST ONLY
+TILEDB_EXPORT capi_return_t tiledb_serialize_query_plan_request(
+    tiledb_ctx_t* ctx,
+    tiledb_query_t* query,
+    tiledb_serialization_type_t serialize_type,
+    tiledb_buffer_t** buffer) TILEDB_NOEXCEPT;
+
 /**
  * Process a consolidation plan request.
  *
