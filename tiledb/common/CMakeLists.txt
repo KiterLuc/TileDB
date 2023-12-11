@@ -57,7 +57,7 @@ commence(object_library baseline)
     this_target_sources(logger.cc governor/governor.cc
         dynamic_memory/dynamic_memory.cc heap_profiler.cc heap_memory.cc
         exception/exception.cc exception/status.cc)
-    find_package(Spdlog_EP REQUIRED)
+    find_package(Spdlog REQUIRED)
     target_link_libraries(baseline PUBLIC spdlog::spdlog)
     target_link_libraries(baseline PUBLIC common)
 conclude(object_library)

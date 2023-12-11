@@ -24,7 +24,7 @@
 # THE SOFTWARE.
 #
 
-find_package(Catch_EP REQUIRED)
+find_package(Catch2 REQUIRED)
 
 add_executable(unit_capi_buffer_list EXCLUDE_FROM_ALL)
 target_sources(unit_capi_buffer_list PUBLIC unit_capi_buffer_list.cc)

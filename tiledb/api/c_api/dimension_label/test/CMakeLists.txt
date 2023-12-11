@@ -27,7 +27,7 @@
 include(common NO_POLICY_SCOPE)
 
 add_executable(unit_capi_dimension_label EXCLUDE_FROM_ALL)
-find_package(Catch_EP REQUIRED)
+find_package(Catch2 REQUIRED)
 target_link_libraries(unit_capi_dimension_label PUBLIC Catch2::Catch2WithMain)
 target_link_libraries(unit_capi_dimension_label PUBLIC capi_dimension_label_stub)
 target_link_libraries(unit_capi_dimension_label PUBLIC generic_tile_io)

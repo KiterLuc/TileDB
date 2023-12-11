@@ -80,7 +80,7 @@ commence(object_library uuid)
     if(WIN32)
         this_target_link_libraries(rpcrt4)
     else()
-        find_package(OpenSSL_EP REQUIRED)
+        find_package(OpenSSL REQUIRED)
         this_target_link_libraries(OpenSSL::Crypto)
     endif()
 conclude(object_library)
@@ -95,8 +95,8 @@ add_test_subdirectory()
 #
 if (TILEDB_TESTS)
   # simple unit test of magic.mgc embedded data vs external data
-  find_package(Magic_EP REQUIRED)
-  if(NOT EXISTS ${libmagic_DICTIONARY})
+  find_package(unofficial-libmagic REQUIRED)
+  if(NOT EXISTS ${unofficial-libmagic_DICTIONARY})
     message(FATAL_ERROR "Failed to find libmagic 'magic.mgc' file.")
   endif()
   add_executable(unit_mgc_dict EXCLUDE_FROM_ALL)
@@ -110,7 +110,7 @@ if (TILEDB_TESTS)
     libmagic
     )
 
-  target_compile_options(unit_mgc_dict PRIVATE -DTILEDB_PATH_TO_MAGIC_MGC=\"${libmagic_DICTIONARY}\")
+  target_compile_options(unit_mgc_dict PRIVATE -DTILEDB_PATH_TO_MAGIC_MGC=\"${unofficial-libmagic_DICTIONARY}\")
   target_include_directories(unit_mgc_dict
     PRIVATE
       ${CMAKE_CURRENT_BINARY_DIR}

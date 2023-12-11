@@ -25,7 +25,7 @@
 #
 
 include(common NO_POLICY_SCOPE)
-find_package(Catch_EP REQUIRED)
+find_package(Catch2 REQUIRED)
 
 # #TODO: link only against a new CAPI array handle, not all core objects
 add_executable(
